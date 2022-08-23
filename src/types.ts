@@ -44,9 +44,10 @@ export interface HighlightContent {
   content: Content;
 }
 
+
 export interface Comment {
   text: string;
-  emoji: string;
+  status: string;
 }
 
 export interface HighlightComment {

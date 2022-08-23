@@ -5,11 +5,11 @@ import "../style/Tip.css";
 interface State {
   compact: boolean;
   text: string;
-  emoji: string;
+  status: string;
 }
 
 interface Props {
-  onConfirm: (comment: { text: string; emoji: string }) => void;
+  onConfirm: (comment: { text: string; status: string;}) => void;
   onOpen: () => void;
   onUpdate?: () => void;
 }
@@ -18,7 +18,7 @@ export class Tip extends Component<Props, State> {
   state: State = {
     compact: true,
     text: "",
-    emoji: "",
+    status: "pending"
   };
 
   // for TipContainer
@@ -32,7 +32,7 @@ export class Tip extends Component<Props, State> {
 
   render() {
     const { onConfirm, onOpen } = this.props;
-    const { compact, text, emoji } = this.state;
+    const { compact, text, status } = this.state;
 
     return (
       <div className="Tip">
@@ -51,7 +51,7 @@ export class Tip extends Component<Props, State> {
             className="Tip__card"
             onSubmit={(event) => {
               event.preventDefault();
-              onConfirm({ text, emoji });
+              onConfirm({ text, status });
             }}
           >
             <div>
@@ -68,22 +68,6 @@ export class Tip extends Component<Props, State> {
                   }
                 }}
               />
-              <div>
-                {["💩", "😱", "😍", "🔥", "😳", "⚠️"].map((_emoji) => (
-                  <label key={_emoji}>
-                    <input
-                      checked={emoji === _emoji}
-                      type="radio"
-                      name="emoji"
-                      value={_emoji}
-                      onChange={(event) =>
-                        this.setState({ emoji: event.target.value })
-                      }
-                    />
-                    {_emoji}
-                  </label>
-                ))}
-              </div>
             </div>
             <div>
               <input type="submit" value="Save" />

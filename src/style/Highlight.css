@@ -2,12 +2,6 @@
   position: absolute;
 }
 
-.Highlight__emoji {
-  position: absolute;
-  color: black;
-  opacity: 1;
-  font-size: 28px;
-}
 
 .Highlight__parts {
   opacity: 1;

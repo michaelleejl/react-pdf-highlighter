@@ -7,6 +7,7 @@ import {
   Highlight,
   Popup,
   AreaHighlight,
+  ActionMenu
 } from "./react-pdf-highlighter";
 
 import type { IHighlight, NewHighlight } from "./react-pdf-highlighter";
@@ -16,6 +17,7 @@ import { Spinner } from "./Spinner";
 import { Sidebar } from "./Sidebar";
 
 import "./style/App.css";
+import { EventBus } from "pdfjs-dist/types/web/ui_utils";
 
 const testHighlights: Record<string, Array<IHighlight>> = _testHighlights;
 
@@ -32,17 +34,6 @@ const parseIdFromHash = () =>
 const resetHash = () => {
   document.location.hash = "";
 };
-
-const HighlightPopup = ({
-  comment,
-}: {
-  comment: { text: string; emoji: string };
-}) =>
-  comment.text ? (
-    <div className="Highlight__popup">
-      {comment.emoji} {comment.text}
-    </div>
-  ) : null;
 
 const PRIMARY_PDF_URL = "https://arxiv.org/pdf/1708.08021.pdf";
 const SECONDARY_PDF_URL = "https://arxiv.org/pdf/1604.02480.pdf";
@@ -109,15 +100,15 @@ class App extends Component<{}, State> {
     });
   }
 
-  updateHighlight(highlightId: string, position: Object, content: Object) {
+  updateHighlight(highlightId: string, position: Object, content: Object, comment:Object) {
     console.log("Updating highlight", highlightId, position, content);
-
     this.setState({
       highlights: this.state.highlights.map((h) => {
         const {
           id,
           position: originalPosition,
           content: originalContent,
+          comment: originalComment,
           ...rest
         } = h;
         return id === highlightId
@@ -125,7 +116,8 @@ class App extends Component<{}, State> {
               id,
               position: { ...originalPosition, ...position },
               content: { ...originalContent, ...content },
-              ...rest,
+              comment: {...originalComment, ...comment},
+              ...rest
             }
           : h;
       }),
@@ -153,7 +145,7 @@ class App extends Component<{}, State> {
             {(pdfDocument) => (
               <PdfHighlighter
                 pdfDocument={pdfDocument}
-                enableAreaSelection={(event) => event.altKey}
+                enableAreaSelection={(event) => true}
                 onScrollChange={resetHash}
                 // pdfScaleValue="page-width"
                 scrollRef={(scrollTo) => {
@@ -170,7 +162,7 @@ class App extends Component<{}, State> {
                   <Tip
                     onOpen={transformSelection}
                     onConfirm={(comment) => {
-                      this.addHighlight({ content, position, comment });
+                      this.addHighlight({ content, position, comment:{...comment, status:"verified"} });
 
                       hideTipAndSelection();
                     }}
@@ -189,7 +181,18 @@ class App extends Component<{}, State> {
                     highlight.content && highlight.content.image
                   );
 
-                  const component = isTextHighlight ? (
+                  return (
+                    <Popup
+                      popupContent={<ActionMenu 
+                                      handleAccept={() => {this.updateHighlight(highlight.id, {}, highlight.content, { status:"verified" }); }}
+                                      handleReject={() => this.updateHighlight(highlight.id, {}, highlight.content, { status:"rejected" })} />}
+                      onMouseOver={(popupContent) =>
+                        setTip(highlight, (highlight) => popupContent)
+                      }
+                      onMouseOut={hideTip}
+                      key={index}
+                    >
+                      {isTextHighlight ? (
                     <Highlight
                       isScrolledTo={isScrolledTo}
                       position={highlight.position}
@@ -203,22 +206,13 @@ class App extends Component<{}, State> {
                         this.updateHighlight(
                           highlight.id,
                           { boundingRect: viewportToScaled(boundingRect) },
-                          { image: screenshot(boundingRect) }
+                          { image: screenshot(boundingRect) },
+                          highlight.comment
                         );
                       }}
                     />
-                  );
-
-                  return (
-                    <Popup
-                      popupContent={<HighlightPopup {...highlight} />}
-                      onMouseOver={(popupContent) =>
-                        setTip(highlight, (highlight) => popupContent)
-                      }
-                      onMouseOut={hideTip}
-                      key={index}
-                      children={component}
-                    />
+                  )}
+                      </Popup>
                   );
                 }}
                 highlights={highlights}

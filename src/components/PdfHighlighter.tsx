@@ -47,6 +47,7 @@ interface State<T_HT> {
   ghostHighlight: {
     position: ScaledPosition;
     content?: { text?: string; image?: string };
+    comment?: {text?: string; status?: string}
   } | null;
   isCollapsed: boolean;
   range: Range | null;
@@ -80,7 +81,7 @@ interface Props<T_HT> {
   pdfScaleValue: string;
   onSelectionFinished: (
     position: ScaledPosition,
-    content: { text?: string; image?: string },
+    content: { text?: string; image?: string; },
     hideTipAndSelection: () => void,
     transformSelection: () => void
   ) => JSX.Element | null;
@@ -672,6 +673,7 @@ export class PdfHighlighter<T_HT extends IHighlight> extends PureComponent<
                           ghostHighlight: {
                             position: scaledPosition,
                             content: { image },
+                            comment: {  status:"pending"  }
                           },
                         },
                         () => {

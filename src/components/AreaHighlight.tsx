@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { Component, useState } from "react";
 
 import { Rnd } from "react-rnd";
 import { getPageFromElement } from "../lib/pdfjs-dom";
@@ -13,18 +13,41 @@ interface Props {
   isScrolledTo: boolean;
 }
 
-export class AreaHighlight extends Component<Props> {
+interface State {
+  hover: boolean;
+}
+
+
+const handleClick = (e: { type: string; }) => {
+  if (e.type === 'click') {
+    console.log('Left click');
+  } else if (e.type === 'contextmenu') {
+    console.log('Right click');
+  }
+};
+
+export class AreaHighlight extends Component<Props, State> {
+  constructor(props: Props){
+    super(props);
+    this.state = {
+      hover: true
+    };
+  }
   render() {
     const { highlight, onChange, isScrolledTo, ...otherProps } = this.props;
-
     return (
       <div
         className={`AreaHighlight ${
           isScrolledTo ? "AreaHighlight--scrolledTo" : ""
-        }`}
+        } `}
+          onMouseEnter={() => {this.setState({ hover: true }); console.log(this.state.hover)}}
+          onMouseLeave={() => {this.setState({ hover: false }); console.log(this.state.hover)}}
+          style={{opacity: this.state.hover ? 1.0 : 0.3}}
+          onClick={handleClick}
+          onContextMenu={handleClick}
       >
         <Rnd
-          className="AreaHighlight__part"
+          className={`AreaHighlight__part ${highlight.comment.status}`}
           onDragStop={(_, data) => {
             const boundingRect: LTWHP = {
               ...highlight.position.boundingRect,
