@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { Component, createRef } from "react";
 
 import {
   PdfLoader,
@@ -26,6 +26,10 @@ interface State {
   highlights: Array<IHighlight>;
 }
 
+const updateHash = (highlight: IHighlight) => {
+  document.location.hash = `highlight-${highlight.id}`;
+};
+
 const getNextId = () => String(Math.random()).slice(2);
 
 const parseIdFromHash = () =>
@@ -42,13 +46,46 @@ const searchParams = new URLSearchParams(document.location.search);
 
 const initialUrl = searchParams.get("url") || PRIMARY_PDF_URL;
 
+const sortHighlights = (h1:IHighlight, h2:IHighlight) => {
+  if (h1.position.pageNumber != h2.position.pageNumber){
+    return h1.position.pageNumber - h2.position.pageNumber
+  } else {
+    if (h1.position.boundingRect.y1 != h2.position.boundingRect.y1){
+      return h1.position.boundingRect.y1 - h2.position.boundingRect.y1
+     } else {
+       return h1.position.boundingRect.x1 - h2.position.boundingRect.x1
+     }
+  }
+   
+}
+
+const nextPendingHighlight = (highlight: IHighlight, highlights:IHighlight[]) => {
+  highlights.filter(h => h.comment.status == "pending").sort(sortHighlights)
+  const l = highlights.length
+  if (l > 1){
+    let b = highlights.findIndex(h => h.id === highlight.id)
+    let nextHighlight = highlights[(b + 1) % l]
+    let nextID = nextHighlight.id
+    // if (refs[nextID]){
+    //   let r = refs[nextID]
+    //   r.current.focus()
+    // }
+    updateHash(highlights[(b + 1) % l])
+  }
+  
+}
+
 class App extends Component<{}, State> {
-  state = {
-    url: initialUrl,
-    highlights: testHighlights[initialUrl]
-      ? [...testHighlights[initialUrl]]
-      : [],
-  };
+  constructor(props: {} | Readonly<{}>){
+    super(props)
+    this.state = {
+      url: initialUrl,
+      highlights: (testHighlights[initialUrl]
+        ? [...testHighlights[initialUrl]]
+        : []).sort(sortHighlights),
+    };
+    
+  }
 
   resetHighlights = () => {
     this.setState({
@@ -93,10 +130,9 @@ class App extends Component<{}, State> {
   addHighlight(highlight: NewHighlight) {
     const { highlights } = this.state;
 
-    console.log("Saving highlight", highlight);
-
+    const id = getNextId()
     this.setState({
-      highlights: [{ ...highlight, id: getNextId() }, ...highlights],
+      highlights: [{ ...highlight, id }, ...highlights].sort(sortHighlights),
     });
   }
 
@@ -120,7 +156,8 @@ class App extends Component<{}, State> {
               ...rest
             }
           : h;
-      }),
+      })
+      .sort(sortHighlights),
     });
   }
 
@@ -129,16 +166,12 @@ class App extends Component<{}, State> {
 
     return (
       <div className="App" style={{ display: "flex", height: "100vh" }}>
-        <Sidebar
-          highlights={highlights}
-          resetHighlights={this.resetHighlights}
-          toggleDocument={this.toggleDocument}
-        />
         <div
           style={{
             height: "100vh",
             width: "75vw",
             position: "relative",
+            background: "#303034"
           }}
         >
           <PdfLoader url={url} beforeLoad={<Spinner />}>
@@ -184,8 +217,12 @@ class App extends Component<{}, State> {
                   return (
                     <Popup
                       popupContent={<ActionMenu 
+                                      status = {highlight.comment.status}
                                       handleAccept={() => {this.updateHighlight(highlight.id, {}, highlight.content, { status:"verified" }); }}
-                                      handleReject={() => this.updateHighlight(highlight.id, {}, highlight.content, { status:"rejected" })} />}
+                                      handleReject={() => this.updateHighlight(highlight.id, {}, highlight.content, { status:"rejected" })}
+                                      handleReview={() => this.updateHighlight(highlight.id, {}, highlight.content, { status:"pending" })}
+                                     />}
+                                      
                       onMouseOver={(popupContent) =>
                         setTip(highlight, (highlight) => popupContent)
                       }
@@ -202,6 +239,7 @@ class App extends Component<{}, State> {
                     <AreaHighlight
                       isScrolledTo={isScrolledTo}
                       highlight={highlight}
+                      onEnter={() => nextPendingHighlight(highlight, this.state.highlights)}
                       onChange={(boundingRect) => {
                         this.updateHighlight(
                           highlight.id,
@@ -220,6 +258,11 @@ class App extends Component<{}, State> {
             )}
           </PdfLoader>
         </div>
+        <Sidebar
+          highlights={highlights}
+          resetHighlights={this.resetHighlights}
+          toggleDocument={this.toggleDocument}
+        />
       </div>
     );
   }

@@ -673,7 +673,7 @@ export class PdfHighlighter<T_HT extends IHighlight> extends PureComponent<
                           ghostHighlight: {
                             position: scaledPosition,
                             content: { image },
-                            comment: {  status:"pending"  }
+                            comment: {  status:"ghost"  }
                           },
                         },
                         () => {

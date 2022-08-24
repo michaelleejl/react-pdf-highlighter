@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import type { IHighlight } from "./react-pdf-highlighter";
-
+import { SegmentedControl } from "ios-segmented-control-react"
 interface Props {
   highlights: Array<IHighlight>;
   resetHighlights: () => void;
@@ -16,6 +16,7 @@ export function Sidebar({
   toggleDocument,
   resetHighlights,
 }: Props) {
+  let [filter, setFilter] = useState<(highlight: IHighlight) => Boolean>(() => (highlight:IHighlight)=>true)
   return (
     <div className="sidebar" style={{ width: "25vw" }}>
       <div className="description" style={{ padding: "1rem" }}>
@@ -26,17 +27,32 @@ export function Sidebar({
             Open in GitHub
           </a>
         </p>
-
-        <p>
-          <small>
-            To create area highlight hold ⌥ Option key (Alt), then click and
-            drag.
-          </small>
-        </p>
       </div>
 
+      <SegmentedControl
+        segments = {[
+          {label: 'All', value:"all"},
+          {label: 'Pending', value:'pending'},
+          {label: 'Reviewed', value:'reviewed'}
+        ]}
+        onChangeSegment={(newValue) => {
+          switch (newValue){
+            case "all":
+              setFilter(() => (highlight:IHighlight)=>true);
+              break;
+            case "pending":
+              setFilter(() => (highlight:IHighlight) => highlight.comment.status == "pending")
+              break;
+            case "reviewed":
+              setFilter(() => (highlight:IHighlight) => highlight.comment.status == "verified" || highlight.comment.status == "rejected")
+          }
+        }}
+      />
+
       <ul className="sidebar__highlights">
-        {highlights.map((highlight, index) => (
+        {highlights
+          .filter(filter)
+          .map((highlight, index) => (
           <li
             key={index}
             className="sidebar__highlight"

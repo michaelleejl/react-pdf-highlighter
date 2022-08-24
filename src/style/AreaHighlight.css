@@ -1,7 +1,10 @@
 .AreaHighlight {
-  border: 1px solid #333;
   opacity: 1;
   mix-blend-mode: multiply;
+  display: inline-block;
+  overflow: auto;
+  height: fit-content;
+  width: fit-content;
 }
 
 .AreaHighlight__part {
@@ -13,16 +16,24 @@
 
 .pending {
   background: rgb(252, 232, 151);
+  border: none;
 }
 
 .verified {
   background: rgb(151, 252, 212);
+  border: none;
 }
 
 .rejected {
   background: rgb(252, 151, 169);
+  border: none;
+}
+
+.ghost {
+  border: 2px dashed rgb(162, 164, 168);
+  background: rgba(0, 0, 0, 0)
 }
 
 .AreaHighlight--scrolledTo .AreaHighlight__part {
-  background: #ff4141;
+  opacity: 1.0 !important;
 }

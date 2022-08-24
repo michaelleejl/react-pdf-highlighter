@@ -5,49 +5,76 @@ import { getPageFromElement } from "../lib/pdfjs-dom";
 
 import "../style/AreaHighlight.css";
 
-import type { LTWHP, ViewportHighlight } from "../types";
+import type { IHighlight, LTWHP, ViewportHighlight } from "../types";
 
 interface Props {
   highlight: ViewportHighlight;
   onChange: (rect: LTWHP) => void;
   isScrolledTo: boolean;
+  onEnter: () => void;
 }
 
 interface State {
   hover: boolean;
+  selected: boolean;
 }
 
-
-const handleClick = (e: { type: string; }) => {
-  if (e.type === 'click') {
-    console.log('Left click');
-  } else if (e.type === 'contextmenu') {
-    console.log('Right click');
-  }
-};
-
 export class AreaHighlight extends Component<Props, State> {
+  wrapperRef: React.RefObject<any>;
+
   constructor(props: Props){
     super(props);
     this.state = {
-      hover: true
+      hover: false,
+      selected: props.isScrolledTo
     };
+    this.wrapperRef = React.createRef();
+    this.handleClickOutside = this.handleClickOutside.bind(this);
   }
+
+  componentDidMount() {
+    document.addEventListener("mousedown", this.handleClickOutside);
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener("mousedown", this.handleClickOutside);
+  }
+
+  handleClickOutside(event: { target: any; }) {
+    if (this.wrapperRef && !this.wrapperRef.current.contains(event.target)) {
+      this.setState({ selected: false })
+    }
+  }
+
   render() {
-    const { highlight, onChange, isScrolledTo, ...otherProps } = this.props;
+    const { highlight, onChange, isScrolledTo, onEnter, ...otherProps } = this.props;
     return (
       <div
+        ref={this.wrapperRef}
         className={`AreaHighlight ${
           isScrolledTo ? "AreaHighlight--scrolledTo" : ""
         } `}
-          onMouseEnter={() => {this.setState({ hover: true }); console.log(this.state.hover)}}
-          onMouseLeave={() => {this.setState({ hover: false }); console.log(this.state.hover)}}
-          style={{opacity: this.state.hover ? 1.0 : 0.3}}
-          onClick={handleClick}
-          onContextMenu={handleClick}
+        onKeyDown={(e:any) => {
+          if (e.key === 'Enter'){
+            highlight.comment.status = 'verified'
+            this.setState({ hover: false, selected: false })
+            onEnter()
+          }
+        }}
+        tabIndex={0}
       >
         <Rnd
+          ref={this.wrapperRef}
           className={`AreaHighlight__part ${highlight.comment.status}`}
+          onMouseEnter={() => {this.setState({ hover: true })}}
+          onMouseLeave={() => {this.setState({ hover: false })}}
+          style={{opacity: this.state.hover ? 1.0 : (this.state.selected ? 1.0 : 0.3)}}
+          onMouseDown={(event: any) => {
+            console.log('clicked')
+            // event.stopPropagation();
+            // event.preventDefault();
+            this.setState({ selected: true })
+          }}
           onDragStop={(_, data) => {
             const boundingRect: LTWHP = {
               ...highlight.position.boundingRect,
@@ -56,7 +83,8 @@ export class AreaHighlight extends Component<Props, State> {
             };
 
             onChange(boundingRect);
-          }}
+          }
+        }
           onResizeStop={(_mouseEvent, _direction, ref, _delta, position) => {
             const boundingRect: LTWHP = {
               top: position.y,
@@ -75,10 +103,6 @@ export class AreaHighlight extends Component<Props, State> {
           size={{
             width: highlight.position.boundingRect.width,
             height: highlight.position.boundingRect.height,
-          }}
-          onClick={(event: Event) => {
-            event.stopPropagation();
-            event.preventDefault();
           }}
           {...otherProps}
         />
